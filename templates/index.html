@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutrition Assistant Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(to right, #6a11cb, #2575fc);
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            flex-direction: column;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+            margin: 20px;
+        }
+        h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #2575fc;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            transition: border-color 0.3s ease;
+        }
+        input:focus, select:focus {
+            border-color: #2575fc;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #2575fc;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #1a5cbf;
+        }
+        .results {
+            margin-top: 20px;
+        }
+        .meal {
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            border-left: 5px solid #2575fc;
+        }
+        .meal p {
+            margin: 5px 0;
+        }
+        .meal a {
+            color: #2575fc;
+            text-decoration: none;
+        }
+        .meal a:hover {
+            text-decoration: underline;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            input, select, button {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Nutrition Assistant Chatbot</h2>
+    <label for="weight">Weight (kg):</label>
+    <input type="number" id="weight" required>
+    <label for="height">Height (cm):</label>
+    <input type="number" id="height" required>
+    <label for="age">Age (years):</label>
+    <input type="number" id="age" required>
+    <label for="gender">Gender:</label>
+    <select id="gender" required>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+    </select>
+    <label for="activity_level">Activity Level:</label>
+    <select id="activity_level" required>
+        <option value="sedentary">Sedentary</option>
+        <option value="lightly active">Lightly active</option>
+        <option value="moderately active">Moderately active</option>
+        <option value="very active">Very active</option>
+        <option value="extra active">Extra active</option>
+    </select>
+    <button onclick="calculateNutrition()">Get Meal Suggestions</button>
+    
+    <div class="results" id="results"></div>
+</div>
+
+<script>
+    function calculateNutrition() {
+        const weight = parseFloat(document.getElementById('weight').value);
+        const height = parseFloat(document.getElementById('height').value);
+        const age = parseInt(document.getElementById('age').value);
+        const gender = document.getElementById('gender').value;
+        const activityLevel = document.getElementById('activity_level').value;
+
+        const formData = new FormData();
+        formData.append('weight', weight);
+        formData.append('height', height);
+        formData.append('age', age);
+        formData.append('gender', gender);
+        formData.append('activity_level', activityLevel);
+
+        fetch('/calculate', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `<p><strong>BMR:</strong> ${data.bmr.toFixed(2)} kJ</p>`;
+            resultsDiv.innerHTML += `<p><strong>Total daily calorie needs:</strong> ${data.calorie_needs_kj.toFixed(2)} kJ</p>`;
+
+            if (data.meals.length > 0) {
+                data.meals.forEach(meal => {
+                    resultsDiv.innerHTML += `
+                        <div class="meal">
+                            <p><strong>Food Link:</strong> <a href="${meal.food_link}" target="_blank">${meal.food_link}</a></p>
+                            <p><strong>Name:</strong> ${meal.name}</p>
+                            <p><strong>Brand:</strong> ${meal.brand}</p>
+                            <p><strong>Nutri Score:</strong> ${meal.nutri_score}</p>
+                            <p><strong>Processing Score:</strong> ${meal.processing_score}</p>
+                            <p><strong>Nutri Energy:</strong> ${meal.nutri_energy !== 'N/A' ? meal.nutri_energy.toFixed(2) + ' kJ' : 'N/A'}</p>
+                            <p><strong>Nutri Fat:</strong> ${meal.nutri_fat}</p>
+                            <p><strong>Nutri Saturated Fat:</strong> ${meal.nutri_satuFat}</p>
+                            <p><strong>Nutri Carbohydrate:</strong> ${meal.nutri_carbohydrate}</p>
+                            <p><strong>Nutri Sugar:</strong> ${meal.nutri_sugar}</p>
+                            <p><strong>Nutri Fiber:</strong> ${meal.nutri_fiber}</p>
+                            <p><strong>Nutri Protein:</strong> ${meal.nutri_protein}</p>
+                            <p><strong>Nutri Salt:</strong> ${meal.nutri_salt}</p>
+                        </div>
+                    `;
+                });
+            } else {
+                resultsDiv.innerHTML += `<p>No suitable meals found.</p>`;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+</script>
+
+</body>
+</html>
